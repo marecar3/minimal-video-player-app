@@ -1,2 +1,2 @@
-# minimal-video-player-app
-Minimal Video Player App hat uses ExoPlayer.
+# exoplayer-playground
+Playground with Exoplayer
