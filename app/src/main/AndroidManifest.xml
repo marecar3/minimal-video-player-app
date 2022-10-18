@@ -15,7 +15,7 @@
         android:theme="@style/Theme.ExoPlayerPlayground"
         tools:targetApi="31">
         <activity
-            android:name=".MinimalVideoPlayerActivity"
+            android:name=".ui.MinimalVideoPlayerActivity"
             android:screenOrientation="landscape"
             android:exported="true">
             <intent-filter>
