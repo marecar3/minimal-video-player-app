@@ -1,8 +1,8 @@
 package app.minimalvideoplayer.player
 
 import android.content.Context
-import android.util.Log
-import com.google.android.exoplayer2.C
+import android.os.Handler
+import android.os.Looper
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.analytics.AnalyticsListener
@@ -16,16 +16,63 @@ import com.google.android.exoplayer2.trackselection.ExoTrackSelection
 import com.google.android.exoplayer2.trackselection.TrackSelector
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import java.util.concurrent.TimeUnit
 
-class MinimalVideoPlayer(context: Context) {
+class MinimalVideoPlayer(
+    context: Context,
+    val onPlaybackStarted: () -> Unit,
+    val onPlaybackTimeAndSelectedTracksUpdate: (
+        positionSec: Long,
+        selectedTracks: List<String>
+    ) -> Unit,
+    val onBitrateUpdate: (previousBitrate: Int, newBitrate: Int) -> Unit
+) {
 
-    var player: ExoPlayer
+    private var player: ExoPlayer
+    private var previousBitrate: Int = -1
+    private val runRecursiveFunction = false
+
+    private val runnable = object : Runnable {
+
+        override fun run() {
+            sendTimeAndSelectedTracksUpdate()
+
+            Handler(Looper.getMainLooper()).postDelayed(
+                this, 1000
+            )
+        }
+    }
 
     init {
         val videoTrackSelectionFactory: ExoTrackSelection.Factory = AdaptiveTrackSelection.Factory()
         val trackSelector: TrackSelector = DefaultTrackSelector(context, videoTrackSelectionFactory)
         player = ExoPlayer.Builder(context).setTrackSelector(trackSelector).build()
         setupPlayerListener()
+    }
+
+    fun sendTimeAndSelectedTracksUpdate() {
+        val positionMillis = player.currentPosition
+        val positionSec = TimeUnit.MILLISECONDS.toSeconds(positionMillis)
+
+        val tracks = player.currentTracks
+        val selectedTracks = mutableListOf<String>()
+        for (trackGroup in tracks.groups) {
+            for (i in 0 until trackGroup.length) {
+                val isSelected = trackGroup.isTrackSelected(i)
+                val trackFormat = trackGroup.getTrackFormat(i)
+                if (isSelected) {
+                    selectedTracks.add("Mime type: ${trackFormat.containerMimeType} codecs: ${trackFormat.codecs} bitrate: ${trackFormat.bitrate}")
+                }
+            }
+        }
+
+        onPlaybackTimeAndSelectedTracksUpdate(positionSec, selectedTracks)
+    }
+
+    private fun schedule() {
+        Handler(Looper.getMainLooper()).postDelayed(
+            runnable, 1000
+        )
     }
 
     private fun setupPlayerListener() {
@@ -35,18 +82,16 @@ class MinimalVideoPlayer(context: Context) {
                 eventTime: AnalyticsListener.EventTime,
                 playbackState: Int
             ) {
-                Log.e("ivica", "Promenilo se ${player.isPlaying} ${playbackState}")
                 when (playbackState) {
-                    ExoPlayer.STATE_BUFFERING ->             //You can use progress dialog to show user that video is preparing or buffering so please wait
-                        Log.e("ivica", "buffering")
-                    ExoPlayer.STATE_IDLE -> {
-                        Log.e("ivica", "idle")
+                    ExoPlayer.STATE_BUFFERING -> {}
+                    ExoPlayer.STATE_IDLE -> {}
+                    ExoPlayer.STATE_READY -> {
+                        if (player.isPlaying) {
+                            onPlaybackStarted.invoke()
+                            schedule()
+                        }
                     }
-                    ExoPlayer.STATE_READY ->             // dismiss your dialog here because our video is ready to play now
-                        Log.e("ivica", "ready")
-                    ExoPlayer.STATE_ENDED -> {
-                        Log.e("ivica", "ended")
-                    }
+                    ExoPlayer.STATE_ENDED -> {}
                 }
             }
 
@@ -55,34 +100,18 @@ class MinimalVideoPlayer(context: Context) {
                 loadEventInfo: LoadEventInfo,
                 mediaLoadData: MediaLoadData
             ) {
-                Log.e("ivica", "on load completed ${mediaLoadData.trackFormat?.bitrate}")
-                Log.e("ivica", "${player.currentPosition}")
-                val tracks = player.currentTracks
 
-                for (trackGroup in tracks.groups) {
-                    // Group level information.
-                    val trackType: @C.TrackType Int = trackGroup.type
-                    val trackInGroupIsSelected = trackGroup.isSelected
-                    val trackInGroupIsSupported = trackGroup.isSupported
-
-                    Log.e("ivica", "group ${trackGroup.isSelected} type: ${trackGroup.type}")
-
-                    for (i in 0 until trackGroup.length) {
-                        // Individual track information.
-                        val isSupported = trackGroup.isTrackSupported(i)
-                        val isSelected = trackGroup.isTrackSelected(i)
-                        val trackFormat = trackGroup.getTrackFormat(i)
-
-                        if (isSelected) {
-                            Log.e("ivica", "format ${trackFormat} ${isSelected} ${player.currentMediaItemIndex}")
-                        }
+                mediaLoadData.trackFormat?.let { format ->
+                    if (previousBitrate != format.bitrate) {
+                        onBitrateUpdate(previousBitrate, format.bitrate)
+                        previousBitrate = format.bitrate
                     }
                 }
             }
         })
     }
 
-    fun setAndPlayVideo(url: String): ExoPlayer {
+    fun createAndPlayVideo(url: String): ExoPlayer {
         val mediaSource = createMediaSource(url)
         player.setMediaSource(mediaSource)
         player.prepare()
