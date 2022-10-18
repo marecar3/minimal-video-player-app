@@ -10,7 +10,7 @@ abstract class BasicAnalytics {
         val params =
             mutableMapOf(
                 PLAYBACK_POSITION_SEC_PARAM to positionSec,
-                PLAYBACK_SELECTED_TRACK_PARAM to selectedTracks
+                PLAYBACK_SELECTED_TRACKS_PARAM to selectedTracks
             )
         trackEvent(PLAYBACK_POSITION_AND_SELECTED_TRACKS_EVENT, params)
     }
@@ -30,11 +30,11 @@ abstract class BasicAnalytics {
         const val PLAYBACK_STARTED_EVENT = "PLAYBACK_STARTED_EVENT"
         const val PLAYBACK_POSITION_AND_SELECTED_TRACKS_EVENT = "PLAYBACK_TIME_AND_SELECTED_TRACKS"
 
-        const val PLAYBACK_POSITION_SEC_PARAM = "PLAYBACK_POSITION_SEC"
-        const val PLAYBACK_SELECTED_TRACK_PARAM = "PLAYBACK_SELECTED_TRACK_PARAM"
+        const val PLAYBACK_POSITION_SEC_PARAM = "position_sec"
+        const val PLAYBACK_SELECTED_TRACKS_PARAM = "selected_tracks"
 
-        const val PLAYBACK_BITRATE_PREVIOUS_PARAM = "PLAYBACK_BITRATE_PREVIOUS_PARAM"
-        const val PLAYBACK_BITRATE_NEW_PARAM = "PLAYBACK_BITRATE_NEW_PARAM"
+        const val PLAYBACK_BITRATE_PREVIOUS_PARAM = "bitrate_previous"
+        const val PLAYBACK_BITRATE_NEW_PARAM = "bitrate_new"
     }
 
     data class SelectedTrack(val type: String, val mimeType: String, val resolution: String)
