@@ -82,7 +82,7 @@ class MinimalVideoPlayer(context: Context) {
         })
     }
 
-    fun setAndPlayVideo(url: String = "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8"): ExoPlayer {
+    fun setAndPlayVideo(url: String): ExoPlayer {
         val mediaSource = createMediaSource(url)
         player.setMediaSource(mediaSource)
         player.prepare()

@@ -2,6 +2,7 @@ package app.minimalvideoplayer.ui
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import app.minimalvideoplayer.BuildConfig
 import app.minimalvideoplayer.databinding.ActivityMinimalVideoPlayerBinding
 import app.minimalvideoplayer.player.MinimalVideoPlayer
 
@@ -19,6 +20,6 @@ class MinimalVideoPlayerActivity : AppCompatActivity() {
         super.onStart()
 
         val minimalVideoPlayer = MinimalVideoPlayer(applicationContext)
-        binding.styledPlayerCv.player = minimalVideoPlayer.setAndPlayVideo()
+        binding.styledPlayerCv.player = minimalVideoPlayer.setAndPlayVideo(BuildConfig.VIDEO_URL)
     }
 }
